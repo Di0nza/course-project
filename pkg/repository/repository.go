@@ -1,6 +1,12 @@
 package repository
 
+import (
+	courseProject "CourseProject"
+	"github.com/jmoiron/sqlx"
+)
+
 type Authorization interface {
+	CreateUser(user courseProject.User) (int, error)
 }
 
 type BrawlersList interface {
@@ -13,6 +19,8 @@ type Repository interface {
 	BrawlersItem
 }
 
-func NewRepository() *Repository {
-	return &Repository{}
+func NewRepository(db *sqlx.DB) *Repository {
+	return &Repository{
+		Authorization: NewAuthPostgres(db),
+	}
 }
