@@ -7,6 +7,7 @@ import (
 
 type Authorization interface {
 	CreateUser(user courseProject.User) (int, error)
+	GetUsername(email, password string) (courseProject.User, error)
 }
 
 type BrawlersList interface {
