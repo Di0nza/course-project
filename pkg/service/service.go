@@ -8,6 +8,7 @@ import (
 type Authorization interface {
 	CreateUser(user courseProject.User) (int, error)
 	GenerateToken(email, password string) (string, error)
+	ParseToken(token string) (int, error)
 }
 
 type BrawlersList interface {
