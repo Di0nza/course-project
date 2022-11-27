@@ -12,17 +12,19 @@ type Authorization interface {
 }
 
 type BrawlersList interface {
+	Create(userID int, brawlersList courseProject.BrawlersList) (int, error)
+	GetAll(userID int) ([]courseProject.BrawlersListCalc, error)
+	Delete(userID int, listsID int) error
 }
-type BrawlersItem interface {
-}
-type Service interface {
+
+type Service struct {
 	Authorization
 	BrawlersList
-	BrawlersItem
 }
 
 func NewService(repos *repository.Repository) *Service {
 	return &Service{
 		Authorization: NewAuthService(repos.Authorization),
+		BrawlersList:  NewBrawlersListService(repos.BrawlersList),
 	}
 }

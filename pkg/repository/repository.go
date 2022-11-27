@@ -11,17 +11,19 @@ type Authorization interface {
 }
 
 type BrawlersList interface {
+	Create(userId int, brawlersList courseProject.BrawlersList) (int, error)
+	GetAll(userId int) ([]courseProject.BrawlersListCalc, error)
+	Delete(userID int, listsID int) error
 }
-type BrawlersItem interface {
-}
-type Repository interface {
+
+type Repository struct {
 	Authorization
 	BrawlersList
-	BrawlersItem
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
+		BrawlersList:  NewBrawlerListPostgres(db),
 	}
 }
