@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"log"
+	"strconv"
 )
 
 var goldArr [10]int = [10]int{20, 35, 75, 140, 290, 480, 800, 1250, 1875, 2800}
@@ -28,16 +29,35 @@ func (r *BrawlerListPostgres) Create(userId int, brawlersList courseProject.Braw
 	var id int
 
 	brawlersName := brawlersList.Name
-	level := brawlersList.CurrentLevel
-	levelUp := brawlersList.NewLevel
-	powerPoints := brawlersList.AvailablePP
+
+	fmt.Println(brawlersList.CurrentLevel)
+	level, err := strconv.Atoi(brawlersList.CurrentLevel)
+	if err != nil {
+		logrus.Printf("failed to parse int: %s", err.Error())
+	}
+	levelUp, err := strconv.Atoi(brawlersList.NewLevel)
+	if err != nil {
+		logrus.Printf("failed to parse int: %s", err.Error())
+	}
+	powerPoints, err := strconv.Atoi(brawlersList.AvailablePP)
+	if err != nil {
+		logrus.Printf("failed to parse int: %s", err.Error())
+	}
+
+	//brawlersName := brawlersList.Name
+	//jsonDataLevel := []byte(string(brawlersList.CurrentLevel))
+	//level := jsonDataLevel
+	//jsonDataLevelUp := []byte(string(brawlersList.NewLevel))
+	//levelUp := jsonDataLevelUp
+	//jsonDataPP := []byte(string(brawlersList.AvailablePP))
+	//powerPoints := jsonDataPP
 	var flag = true
 
 	if level < 1 || level > 10 {
-		logrus.Fatalf("wrong  current level")
+		logrus.Printf("wrong  current level")
 	}
 	if level > levelUp || levelUp < 2 || levelUp > 11 {
-		logrus.Fatalf("wrong new level")
+		logrus.Printf("wrong new level")
 	}
 
 	switch level {
@@ -116,7 +136,7 @@ func (r *BrawlerListPostgres) Create(userId int, brawlersList courseProject.Braw
 		break
 	}
 	if !flag {
-		log.Fatalf("wrong amount of power points")
+		log.Printf("wrong amount of power points")
 	}
 
 	var goldSum int = 0
@@ -150,7 +170,7 @@ func (r *BrawlerListPostgres) Create(userId int, brawlersList courseProject.Braw
 
 	var allRedPoints = redPointsG + redPointsP
 
-	createListQuery := fmt.Sprintf("INSERT INTO %s (brawlers_name, current_level, available_PP, new_level, gold, pp, cp_for_gold, cp_gold, cp_for_pp, cp_pp, cp_total) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id)",
+	createListQuery := fmt.Sprintf("INSERT INTO %s (brawlers_name, current_level, available_PP, new_level, gold, pp, cp_for_gold, cp_gold, cp_for_pp, cp_pp, cp_total) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id",
 		brawlersTable)
 	row := tx.QueryRow(createListQuery, brawlersName, level, powerPoints, levelUp, goldSum, powerPointSum, redPointsG, redPointsGCount*250, redPointsP, redPointsPCount*100, allRedPoints)
 	if err := row.Scan(&id); err != nil {
@@ -158,7 +178,7 @@ func (r *BrawlerListPostgres) Create(userId int, brawlersList courseProject.Braw
 		return 0, err
 	}
 
-	createUsersListQuery := fmt.Sprintf("INSERT INTO %s (user_id, list_id) VALUES ($1, $2)", usersListsTable)
+	createUsersListQuery := fmt.Sprintf("INSERT INTO %s (user_id, lists_id) VALUES ($1, $2)", usersListsTable)
 	_, err = tx.Exec(createUsersListQuery, userId, id)
 	if err != nil {
 		tx.Rollback()
@@ -171,7 +191,7 @@ func (r *BrawlerListPostgres) Create(userId int, brawlersList courseProject.Braw
 func (r *BrawlerListPostgres) GetAll(userId int) ([]courseProject.BrawlersListCalc, error) {
 	var lists []courseProject.BrawlersListCalc
 
-	query := fmt.Sprintf("SELECT tl.id, tl.brawlers_name, tl.current_level, tl.available_PP, tl.new_level, tl.gold, tl.pp , tl.cp_for_gold, tl.cp_gold, tl.cp_for_pp, tl.cp_pp, tl.cp_total  FROM %s tl INNER JOIN %s ul on tl.id = ul.list_id WHERE ul.user_id = $1",
+	query := fmt.Sprintf("SELECT tl.id, tl.brawlers_name, tl.current_level, tl.available_PP, tl.new_level, tl.gold, tl.pp , tl.cp_for_gold, tl.cp_gold, tl.cp_for_pp, tl.cp_pp, tl.cp_total  FROM %s tl INNER JOIN %s ul on tl.id = ul.lists_id WHERE ul.user_id = $1",
 		brawlersTable, usersListsTable)
 	err := r.db.Select(&lists, query, userId)
 
@@ -179,7 +199,7 @@ func (r *BrawlerListPostgres) GetAll(userId int) ([]courseProject.BrawlersListCa
 }
 
 func (r *BrawlerListPostgres) Delete(userId, listId int) error {
-	query := fmt.Sprintf("DELETE FROM %s tl USING %s ul WHERE tl.id = ul.list_id AND ul.user_id=$1 AND ul.list_id=$2",
+	query := fmt.Sprintf("DELETE FROM %s tl USING %s ul WHERE tl.id = ul.lists_id AND ul.user_id=$1 AND ul.lists_id=$2",
 		brawlersTable, usersListsTable)
 	_, err := r.db.Exec(query, userId, listId)
 
